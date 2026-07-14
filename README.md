@@ -1,3 +1,6 @@
+<img width="1920" height="919" alt="2026-07-14_113808- RaGEZONE" src="https://github.com/user-attachments/assets/cc87044e-14a4-4075-946e-32dc463ae5ba" />
+<img width="551" height="321" alt="2026-07-14_114407- RaGEZONE" src="https://github.com/user-attachments/assets/cb974002-5d18-4fb5-bc8f-6fdef6eac2c2" />
+
 # 🚀 Browser Server Monitor
 
 > Powerful Chrome extension for monitoring servers, viewing logs in real time, managing alerts, and analyzing issues with AI.
