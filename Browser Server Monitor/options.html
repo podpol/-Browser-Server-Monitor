@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data: blob:; connect-src https://api.openai.com https://api.anthropic.com;">
+<title>Browser Server Monitor — Settings</title>
+<style>
+  :root {
+    --bg-grad-1: #0f0f1e;
+    --bg-grad-2: #1a1a2e;
+    --accent-1: #667eea;
+    --accent-2: #764ba2;
+    --text: #e4e4e7;
+    --text-dim: rgba(255,255,255,0.5);
+    --text-muted: rgba(255,255,255,0.45);
+    --border: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.15);
+    --surface: rgba(255,255,255,0.03);
+    --surface-2: rgba(0,0,0,0.2);
+    --danger: #ef4444;
+    --warning: #facc15;
+    --success: #10b981;
+    --radius-sm: 6px;
+    --radius-md: 9px;
+    --radius-lg: 14px;
+    --focus-ring: 0 0 0 2px rgba(102, 126, 234, 0.5);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 100%);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 30px 20px;
+    line-height: 1.5;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+  h1 {
+    font-size: 28px; font-weight: 700; margin-bottom: 6px;
+    background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .subtitle { color: var(--text-dim); margin-bottom: 20px; font-size: 13px; }
+  .version-badge {
+    display: inline-block; padding: 2px 8px; margin-left: 8px;
+    background: rgba(102, 126, 234, 0.15); border: 1px solid rgba(102, 126, 234, 0.3);
+    border-radius: 10px; font-size: 10px; color: var(--accent-1);
+    vertical-align: middle;
+  }
+  
+  /* ============ SEARCH BAR ============ */
+  .search-bar {
+    position: relative;
+    margin-bottom: 16px;
+  }
+  .search-bar input {
+    width: 100%;
+    padding: 10px 70px 10px 38px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--text);
+    font-size: 13px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .search-bar input:focus {
+    outline: none;
+    border-color: var(--accent-1);
+    box-shadow: var(--focus-ring);
+  }
+  .search-bar::before {
+    content: '🔍';
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    opacity: 0.5;
+    pointer-events: none;
+  }
+  .search-bar kbd {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 2px 6px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 10px;
+    color: var(--text-dim);
+    font-family: monospace;
+    pointer-events: none;
+  }
+  #search-clear {
+    position: absolute;
+    right: 42px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 12px;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border-radius: 4px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    line-height: 1;
+  }
+  #search-clear:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--danger);
+    border-color: var(--danger);
+  }
+  #search-clear.visible { display: flex; }
+  
+  .tabs-nav {
+    display: flex; gap: 4px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 12px;
+    padding: 6px; margin-bottom: 20px; flex-wrap: wrap;
+    align-items: center;
+  }
+  .tab-nav {
+    padding: 9px 13px; background: transparent; border: none; border-radius: 8px;
+    color: rgba(255,255,255,0.6); font-size: 12px; font-weight: 500;
+    cursor: pointer; transition: all 0.2s; white-space: nowrap;
+  }
+  .tab-nav:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.9); }
+  .tab-nav.active {
+    background: linear-gradient(135deg, rgba(102,126,234,0.25), rgba(118,75,162,0.25));
+    color: #fff;
+  }
+  .tab-nav:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+  
+  .section {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px;
+    display: none; animation: fadeIn 0.2s ease;
+  }
+  .section.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  
+  .section-title {
+    font-size: 15px; font-weight: 600; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title::before {
+    content: ''; width: 4px; height: 16px;
+    background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+    border-radius: 2px;
+  }
+  .section-hint { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.5; }
+  
+  .row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
+  input[type="text"], input[type="url"], input[type="number"], input[type="password"], input[type="search"] {
+    flex: 1; min-width: 120px; padding: 8px 12px;
+    background: rgba(0,0,0,0.3); border: 1px solid var(--border);
+    border-radius: 7px; color: var(--text); font-size: 12px;
+    transition: border-color 0.2s;
+  }
+  input:focus { outline: none; border-color: var(--accent-1); box-shadow: var(--focus-ring); }
+  input:invalid { border-color: var(--danger); }
+  input[type="color"] { width: 36px; height: 34px; border: none; border-radius: 7px; cursor: pointer; background: transparent; }
+  input[type="range"] { flex: 1; accent-color: var(--accent-1); }
+  select {
+    padding: 8px 12px; background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border); border-radius: 7px;
+    color: var(--text); font-size: 12px; cursor: pointer;
+  }
+  select:focus { outline: none; border-color: var(--accent-1); }
+  button {
+    padding: 8px 14px; border: none; border-radius: 7px;
+    cursor: pointer; font-size: 12px; font-weight: 500; transition: all 0.2s;
+  }
+  button:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary { background: linear-gradient(135deg, var(--accent-1), var(--accent-2)); color: white; }
+  .btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); }
+  .btn-danger { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
+  .btn-danger:hover:not(:disabled) { background: rgba(239, 68, 68, 0.25); }
+  .btn-ghost { background: rgba(255,255,255,0.05); color: var(--text); border: 1px solid var(--border); }
+  .btn-ghost:hover:not(:disabled) { background: rgba(255,255,255,0.1); }
+  .checkbox-row { display: flex; align-items: center; gap: 6px; }
+  .checkbox-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent-1); cursor: pointer; }
+  .checkbox-row label { cursor: pointer; font-size: 12px; }
+  
+  .toast-container {
+    position: fixed; bottom: 20px; right: 20px; z-index: 1000;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .toast {
+    padding: 10px 18px; border-radius: var(--radius-md);
+    color: white; font-size: 12px; font-weight: 500;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    opacity: 0; transform: translateX(20px);
+    transition: all 0.3s; max-width: 320px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .toast.show { opacity: 1; transform: translateX(0); }
+  .toast.success { background: linear-gradient(135deg, var(--success), #059669); }
+  .toast.error { background: linear-gradient(135deg, var(--danger), #dc2626); }
+  .toast.warning { background: linear-gradient(135deg, var(--warning), #eab308); color: #000; }
+  .toast.info { background: linear-gradient(135deg, var(--accent-1), var(--accent-2)); }
+  
+  .empty {
+    text-align: center; padding: 32px 20px; color: var(--text-muted);
+    font-size: 12px; border: 1px dashed var(--border); border-radius: var(--radius-md);
+  }
+  .empty-icon { font-size: 32px; margin-bottom: 8px; opacity: 0.5; }
+  
+  .server-card {
+    background: var(--surface-2); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px; padding: 14px; margin-bottom: 10px;
+    transition: border-color 0.2s;
+  }
+  .server-card:hover { border-color: var(--border-strong); }
+  .server-card.dragging { opacity: 0.5; }
+  .server-card.drag-over { border-color: var(--accent-1); border-style: dashed; }
+  .server-card-header {
+    display: flex; gap: 8px; align-items: center; margin-bottom: 10px;
+  }
+  .server-card-header input { font-size: 14px; font-weight: 600; }
+  .drag-handle {
+    cursor: grab; padding: 4px 8px; color: var(--text-dim);
+    user-select: none; font-size: 14px;
+  }
+  .drag-handle:active { cursor: grabbing; }
+  
+  .sub-section {
+    margin-top: 12px; padding-top: 12px;
+    border-top: 1px dashed rgba(255,255,255,0.08);
+  }
+  .sub-title {
+    font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.7);
+    margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+  }
+  
+  .log-item, .alert-item, .sound-item {
+    background: rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 7px; padding: 8px 10px; margin-bottom: 6px;
+    display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+  }
+  
+  .mini-btn { padding: 4px 9px; font-size: 11px; border-radius: 5px; }
+  
+  .lang-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 5px; margin-top: 10px;
+  }
+  .lang-btn {
+    padding: 7px 10px; background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border); border-radius: 7px;
+    color: rgba(255,255,255,0.7); font-size: 11px; cursor: pointer;
+    transition: all 0.2s; text-align: left;
+  }
+  .lang-btn:hover { background: rgba(102, 126, 234, 0.1); color: #fff; }
+  .lang-btn.active {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.25), rgba(118, 75, 162, 0.25));
+    border-color: var(--accent-1); color: #fff; font-weight: 600;
+  }
+  
+  .ai-config {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    border-radius: 10px; padding: 14px; margin-top: 12px;
+  }
+  .api-key-wrapper { position: relative; flex: 1; min-width: 120px; }
+  .api-key-wrapper input { width: 100%; padding-right: 36px; }
+  .toggle-visibility {
+    position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+    background: transparent; border: none; color: var(--text-dim);
+    cursor: pointer; padding: 6px; font-size: 14px;
+  }
+  .toggle-visibility:hover { color: var(--text); }
+  
+  details { margin-top: 8px; }
+  summary {
+    cursor: pointer; padding: 6px 10px;
+    background: rgba(255,255,255,0.04); border-radius: var(--radius-sm);
+    font-size: 12px; color: rgba(255,255,255,0.7);
+    list-style: none;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: '▶'; display: inline-block; margin-right: 6px; transition: transform 0.2s; font-size: 10px; }
+  details[open] summary::before { transform: rotate(90deg); }
+  summary:hover { background: rgba(255,255,255,0.08); }
+  
+  .data-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;
+  }
+  @media (max-width: 640px) { .data-grid { grid-template-columns: 1fr; } }
+  .data-card {
+    background: var(--surface-2); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px; padding: 16px;
+  }
+  .data-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+  .data-card .desc { font-size: 11px; color: var(--text-dim); margin-bottom: 12px; }
+  .data-card button { width: 100%; }
+  
+  .warning-box {
+    background: rgba(250,204,21,0.08); border: 1px solid rgba(250,204,21,0.2);
+    border-radius: 8px; padding: 12px; margin-bottom: 12px;
+  }
+  .warning-box .title { font-size: 12px; color: var(--warning); font-weight: 600; margin-bottom: 4px; }
+  .warning-box .text { font-size: 11px; color: rgba(255,255,255,0.7); }
+  
+  #import-preview {
+    display: none; background: rgba(0,0,0,0.3); border-radius: 8px;
+    padding: 12px; margin-top: 12px; font-family: monospace;
+    font-size: 11px; color: rgba(255,255,255,0.7); max-height: 200px; overflow-y: auto;
+  }
+  
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    display: none; align-items: center; justify-content: center;
+    z-index: 2000; backdrop-filter: blur(4px);
+  }
+  .modal-overlay.show { display: flex; animation: fadeIn 0.2s; }
+  .modal {
+    background: linear-gradient(135deg, #1a1a2e, #0f0f1e);
+    border: 1px solid var(--border-strong); border-radius: var(--radius-lg);
+    padding: 24px; max-width: 420px; width: 90%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .modal h3 { font-size: 16px; margin-bottom: 8px; }
+  .modal p { font-size: 13px; color: var(--text-dim); margin-bottom: 16px; line-height: 1.5; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  
+  .dirty-indicator {
+    display: none; padding: 4px 10px; background: rgba(250,204,21,0.15);
+    border: 1px solid rgba(250,204,21,0.3); border-radius: 12px;
+    font-size: 11px; color: var(--warning); margin-left: auto;
+  }
+  .dirty-indicator.show { display: inline-block; }
+  
+  .skeleton {
+    background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 100%);
+    background-size: 200% 100%; animation: shimmer 1.5s infinite;
+    border-radius: var(--radius-sm); height: 40px; margin-bottom: 8px;
+  }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  
+  kbd {
+    padding: 2px 6px; background: rgba(255,255,255,0.08);
+    border: 1px solid var(--border); border-radius: 4px;
+    font-family: monospace; font-size: 10px; color: var(--text-dim);
+  }
+  
+  .danger-threshold-hint {
+    font-size: 10px; color: rgba(255,255,255,0.5);
+    margin-top: 4px; padding: 6px 10px;
+    background: rgba(0,0,0,0.2); border-radius: 5px;
+    display: inline-block;
+  }
+  
+  .server-avatar-preview {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 14px;
+    overflow: hidden; flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .server-avatar-preview img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  
+  /* ============ PRESETS ============ */
+  .presets-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+  }
+  
+  .preset-card {
+    background: var(--surface-2);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+  }
+  
+  .preset-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent-1);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+  }
+  
+  .preset-card.active {
+    border-color: var(--accent-1);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+  }
+  
+  .preset-card.active::after {
+    content: '✓';
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: var(--accent-1);
+    color: #fff;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+  
+  .preset-preview {
+    height: 56px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  
+  .preset-preview-bar {
+    height: 10px;
+    background: rgba(255,255,255,0.08);
+    margin: 5px;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    padding: 0 5px;
+    gap: 3px;
+  }
+  
+  .preset-preview-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+  }
+  
+  .preset-preview-line {
+    height: 3px;
+    margin: 2px 5px;
+    border-radius: 2px;
+    opacity: 0.7;
+  }
+  
+  .preset-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  
+  .preset-desc {
+    font-size: 9px;
+    color: var(--text-dim);
+    line-height: 1.3;
+  }
+  
+  .preset-delete {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    width: 18px;
+    height: 18px;
+    background: rgba(239, 68, 68, 0.9);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 9px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+  }
+  
+  .preset-card:hover .preset-delete {
+    display: flex;
+  }
+  
+  /* ============ THEME PREVIEW ============ */
+  .theme-preview-container {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    font-family: 'SF Mono', 'Monaco', monospace;
+    font-size: 11.5px;
+    line-height: 1.4;
+    transition: all 0.2s;
+  }
+  
+  .preview-line {
+    padding: 4px 8px;
+    margin: 2px 0;
+    border-left: 3px solid transparent;
+    border-radius: 3px;
+    transition: all 0.2s;
+  }
+  
+  .preview-line.preview-error {
+    border-left-color: #ef4444;
+    background: rgba(239, 68, 68, 0.08);
+  }
+  
+  .preview-line.preview-warn {
+    border-left-color: #facc15;
+    background: rgba(250, 204, 21, 0.08);
+  }
+  
+  .preview-line.preview-info {
+    border-left-color: #60a5fa;
+  }
+  
+  .preview-line.preview-message {
+    border-left-color: #4ade80;
+  }
+  
+  .preview-line.preview-hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .preview-timestamp {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 10px;
+    margin-right: 6px;
+  }
+  
+  .preview-level {
+    font-weight: 600;
+    margin-right: 6px;
+  }
+  
+  .preview-error .preview-level { color: #f87171; }
+  .preview-warn .preview-level { color: #facc15; }
+  .preview-info .preview-level { color: #60a5fa; }
+  
+  .preview-channel {
+    color: #fb923c;
+    font-weight: 600;
+    margin-right: 5px;
+  }
+  
+  .preview-player {
+    color: #c084fc;
+    font-weight: 600;
+    margin-right: 5px;
+  }
+  
+  .preview-trigger {
+    background: rgba(250, 204, 21, 0.2);
+    color: #facc15;
+    padding: 0 3px;
+    border-radius: 2px;
+    font-weight: 700;
+  }
+  
+  .preview-text {
+    color: rgba(255, 255, 255, 0.88);
+  }
+  
+  @media print {
+    body { background: white; color: black; }
+    .tabs-nav, button, .search-bar { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>
+    🛰️ Browser Server Monitor
+    <span class="version-badge">v5.3</span>
+  </h1>
+  <p class="subtitle" data-i18n="opt.subtitle">Monitoring, logs, alerts, AI analysis</p>
+  
+  <div class="search-bar" role="search">
+    <input type="search" id="settings-search" placeholder="Search settings..." aria-label="Search settings">
+    <button type="button" id="search-clear" aria-label="Clear search" title="Clear (Esc)">✕</button>
+    <kbd title="Press / or Ctrl+K to focus">/</kbd>
+  </div>
+  
+  <nav class="tabs-nav" role="tablist" aria-label="Settings sections">
+    <button class="tab-nav active" data-tab="servers" role="tab" aria-selected="true" data-i18n="srv.title">Servers</button>
+    <button class="tab-nav" data-tab="triggers" role="tab" aria-selected="false" data-i18n="opt.triggers">Triggers</button>
+    <button class="tab-nav" data-tab="filters" role="tab" aria-selected="false" data-i18n="opt.filters">Filters</button>
+    <button class="tab-nav" data-tab="blacklist" role="tab" aria-selected="false" data-i18n="opt.blacklist">Blacklist</button>
+    <button class="tab-nav" data-tab="ai" role="tab" aria-selected="false">AI</button>
+    <button class="tab-nav" data-tab="theme" role="tab" aria-selected="false" data-i18n="opt.theme">Theme</button>
+    <button class="tab-nav" data-tab="data" role="tab" aria-selected="false" data-i18n="opt.data">Data</button>
+    <button class="tab-nav" data-tab="language" role="tab" aria-selected="false" data-i18n="opt.language">Language</button>
+    <button class="tab-nav" data-tab="manual" role="tab" aria-selected="false" data-i18n="opt.manual">Manual</button>
+    <span class="dirty-indicator" id="dirty-indicator" title="Unsaved changes">● Modified</span>
+  </nav>
+  
+  <main>
+    <section class="section active" data-section="servers" role="tabpanel" aria-labelledby="tab-servers">
+      <div class="section-title" data-i18n="section.servers.title">Servers</div>
+      <div class="section-hint" data-i18n="section.servers.hint">Add servers with logs, ping and alerts. Drag to reorder.</div>
+      <div id="servers-list" role="list" aria-live="polite"></div>
+      <button type="button" class="btn-primary" id="add-server-btn" data-i18n="srv.add">+ Add server</button>
+    </section>
+    
+    <section class="section" data-section="triggers" role="tabpanel">
+      <div class="section-title" data-i18n="section.triggers.title">Triggers</div>
+      <div class="section-hint" data-i18n="section.triggers.hint">Words highlighted in all logs.</div>
+      <div id="triggers-list" role="list"></div>
+      <button type="button" class="btn-primary" id="add-trigger-btn" data-i18n="opt.addTrigger">+ Add trigger</button>
+      
+      <div class="sub-section">
+        <div class="sub-title">📥 Import from file</div>
+        <div class="section-hint">One word per line. Each line becomes a trigger.</div>
+        <div class="row">
+          <input type="file" id="triggers-file" accept=".txt,.csv,.list" style="font-size:11px;flex:1;">
+          <input type="color" id="triggers-file-color" value="#facc15" title="Color">
+          <input type="color" id="triggers-file-bgcolor" value="#facc15" title="Background">
+          <label class="checkbox-row" style="font-size:11px;">
+            <input type="checkbox" id="triggers-file-bold" checked>
+            <span>Bold</span>
+          </label>
+          <button type="button" class="btn-primary" id="import-triggers-btn">Import</button>
+        </div>
+        <div id="triggers-import-preview" style="display:none;margin-top:8px;padding:8px;background:rgba(0,0,0,0.2);border-radius:6px;font-size:11px;max-height:150px;overflow-y:auto;font-family:monospace;"></div>
+      </div>
+    </section>
+    
+    <section class="section" data-section="filters" role="tabpanel">
+      <div class="section-title" data-i18n="section.filters.title">Filters</div>
+      <div class="section-hint" data-i18n="section.filters.hint">Right-click a log line → creates filter.</div>
+      <div id="filters-list" role="list"></div>
+      <button type="button" class="btn-ghost" id="clear-filters-btn" data-i18n="opt.clearFilters">Clear all filters</button>
+    </section>
+    
+    <section class="section" data-section="blacklist" role="tabpanel">
+      <div class="section-title" data-i18n="section.blacklist.title">Blacklist</div>
+      <div class="section-hint" data-i18n="section.blacklist.hint">Words to hide or mask.</div>
+      <div id="blacklist-list" role="list"></div>
+      <form class="row" style="margin-top: 10px;" id="blacklist-form" autocomplete="off">
+        <input type="text" id="bl-word" data-i18n-placeholder="opt.wordOrPhrase" placeholder="Word or phrase" required aria-label="Word or phrase">
+        <select id="bl-mode" aria-label="Mode">
+          <option value="hide_line" data-i18n="opt.hideLine">Hide line</option>
+          <option value="mask_word" data-i18n="opt.maskWord">Replace with ***</option>
+        </select>
+        <button type="submit" class="btn-primary" data-i18n="opt.add">+ Add</button>
+      </form>
+      
+      <div class="sub-section">
+        <div class="sub-title">📥 Import from file</div>
+        <div class="section-hint">One word per line. Each line becomes a blacklist entry.</div>
+        <div class="row">
+          <input type="file" id="blacklist-file" accept=".txt,.csv,.list" style="font-size:11px;flex:1;">
+          <select id="blacklist-file-mode" style="min-width:140px;">
+            <option value="hide_line">Hide line</option>
+            <option value="mask_word">Replace with ***</option>
+          </select>
+          <button type="button" class="btn-primary" id="import-blacklist-btn">Import</button>
+        </div>
+        <div id="blacklist-import-preview" style="display:none;margin-top:8px;padding:8px;background:rgba(0,0,0,0.2);border-radius:6px;font-size:11px;max-height:150px;overflow-y:auto;font-family:monospace;"></div>
+      </div>
+    </section>
+    
+    <section class="section" data-section="ai" role="tabpanel">
+      <div class="section-title" data-i18n="section.ai.title">AI Analysis</div>
+      <div class="section-hint" data-i18n="section.ai.hint">Connect OpenAI or Anthropic API.</div>
+      
+      <div class="warning-box">
+        <div class="title">🔐 Security note</div>
+        <div class="text">API key is stored in browser sync storage and sent only to the selected provider. Never share your key.</div>
+      </div>
+      
+      <form class="ai-config" id="ai-form" autocomplete="off">
+        <div class="row">
+          <label for="ai-enabled" style="width:120px;font-size:12px;">Enable AI:</label>
+          <input type="checkbox" id="ai-enabled" style="width:18px;height:18px;">
+        </div>
+        <div class="row">
+          <label for="ai-provider" style="width:120px;font-size:12px;">Provider:</label>
+          <select id="ai-provider">
+            <option value="openai">OpenAI</option>
+            <option value="anthropic">Anthropic (Claude)</option>
+          </select>
+        </div>
+        <div class="row">
+          <label for="ai-apikey" style="width:120px;font-size:12px;">API Key:</label>
+          <div class="api-key-wrapper">
+            <input type="password" id="ai-apikey" placeholder="sk-... or sk-ant-..." autocomplete="off" spellcheck="false">
+            <button type="button" class="toggle-visibility" id="toggle-apikey" aria-label="Toggle visibility" title="Show/hide">👁️</button>
+          </div>
+        </div>
+        <div class="row">
+          <label for="ai-model" style="width:120px;font-size:12px;">Model:</label>
+          <input type="text" id="ai-model" placeholder="gpt-4o-mini" list="ai-models">
+          <datalist id="ai-models">
+            <option value="gpt-4o-mini">
+            <option value="gpt-4o">
+            <option value="gpt-4-turbo">
+            <option value="claude-3-5-sonnet-20241022">
+            <option value="claude-3-5-haiku-20241022">
+          </datalist>
+        </div>
+      </form>
+    </section>
+    
+    <section class="section" data-section="theme" role="tabpanel">
+      <div class="section-title" data-i18n="section.theme.title">Theme</div>
+      <div class="section-hint" data-i18n="section.theme.hint">Choose a preset or customize manually.</div>
+      
+      <div class="sub-title">⚡ Quick presets</div>
+      <div class="presets-grid" id="presets-grid"></div>
+      
+      <div class="row" style="margin-top: 12px; gap: 10px;">
+        <button type="button" class="btn-ghost" id="reset-to-default-btn">↺ Reset to default</button>
+        <button type="button" class="btn-primary" id="save-current-preset-btn">💾 Save current as preset</button>
+      </div>
+      
+      <div id="custom-presets-section" style="margin-top: 16px; display:none;">
+        <div class="sub-title">⭐ Your presets</div>
+        <div class="presets-grid" id="custom-presets-grid"></div>
+      </div>
+      
+      <div class="sub-section" style="margin-top: 20px;">
+        <div class="sub-title">🎛️ Manual customization</div>
+        <div class="section-hint">Fine-tune colors, fonts and borders. Changes apply instantly.</div>
+        
+        <div class="sub-title" style="font-size:11px;margin-top:12px;">🎨 Colors</div>
+        <div class="row">
+          <label for="opacity" style="width:130px;font-size:12px;" data-i18n="opt.opacity">Opacity:</label>
+          <input type="range" id="opacity" min="0.3" max="1" step="0.05" value="0.96">
+          <span id="opacity-val" style="width:40px;font-size:12px;">96%</span>
+        </div>
+        <div class="row">
+          <label for="bg-color" style="width:130px;font-size:12px;" data-i18n="opt.panelBg">Panel background:</label>
+          <input type="color" id="bg-color" value="#14161e">
+          <input type="range" id="bg-alpha" min="0" max="1" step="0.05" value="0.96">
+        </div>
+        <div class="row">
+          <label for="text-color" style="width:130px;font-size:12px;" data-i18n="opt.textColor">Text color:</label>
+          <input type="color" id="text-color" value="#e4e4e7">
+        </div>
+        <div class="row">
+          <label for="error-bg-color" style="width:130px;font-size:12px;">Error background:</label>
+          <input type="color" id="error-bg-color" value="#ef4444">
+          <input type="range" id="error-bg-alpha" min="0" max="0.5" step="0.02" value="0.08">
+        </div>
+        <div class="row">
+          <label for="warn-bg-color" style="width:130px;font-size:12px;">Warning background:</label>
+          <input type="color" id="warn-bg-color" value="#facc15">
+          <input type="range" id="warn-bg-alpha" min="0" max="0.5" step="0.02" value="0.08">
+        </div>
+        <div class="row">
+          <label for="hover-bg-color" style="width:130px;font-size:12px;">Hover background:</label>
+          <input type="color" id="hover-bg-color" value="#ffffff">
+          <input type="range" id="hover-bg-alpha" min="0" max="0.3" step="0.01" value="0.05">
+        </div>
+        
+        <div class="sub-title" style="font-size:11px;margin-top:16px;">🔤 Font</div>
+        <div class="row">
+          <label for="font-family" style="width:130px;font-size:12px;">Font family:</label>
+          <select id="font-family" style="flex:2;">
+            <option value="'SF Mono', 'Monaco', 'Menlo', monospace">SF Mono (default)</option>
+            <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+            <option value="'Fira Code', monospace">Fira Code</option>
+            <option value="'Cascadia Code', monospace">Cascadia Code</option>
+            <option value="'Roboto Mono', monospace">Roboto Mono</option>
+            <option value="'Source Code Pro', monospace">Source Code Pro</option>
+            <option value="'Consolas', monospace">Consolas</option>
+            <option value="'Courier New', monospace">Courier New</option>
+            <option value="'Ubuntu Mono', monospace">Ubuntu Mono</option>
+          </select>
+        </div>
+        <div class="row">
+          <label for="font-size" style="width:130px;font-size:12px;">Font size:</label>
+          <input type="range" id="font-size" min="9" max="16" step="0.5" value="11.5">
+          <span id="font-size-val" style="width:40px;font-size:12px;">11.5px</span>
+        </div>
+        <div class="row">
+          <label for="line-height" style="width:130px;font-size:12px;">Line height:</label>
+          <input type="range" id="line-height" min="1" max="2" step="0.05" value="1.4">
+          <span id="line-height-val" style="width:40px;font-size:12px;">1.4</span>
+        </div>
+        <div class="row">
+          <label for="letter-spacing" style="width:130px;font-size:12px;">Letter spacing:</label>
+          <input type="range" id="letter-spacing" min="-0.5" max="2" step="0.1" value="0">
+          <span id="letter-spacing-val" style="width:40px;font-size:12px;">0px</span>
+        </div>
+        <div class="checkbox-row" style="margin-left:138px;">
+          <input type="checkbox" id="font-bold">
+          <label for="font-bold" style="font-size:12px;">Bold text</label>
+        </div>
+        
+        <div class="sub-title" style="font-size:11px;margin-top:16px;">🔲 Borders</div>
+        <div class="row">
+          <label for="border-width" style="width:130px;font-size:12px;">Border width:</label>
+          <input type="range" id="border-width" min="0" max="6" step="1" value="3">
+          <span id="border-width-val" style="width:40px;font-size:12px;">3px</span>
+        </div>
+        <div class="row">
+          <label for="border-radius" style="width:130px;font-size:12px;">Corner radius:</label>
+          <input type="range" id="border-radius" min="0" max="12" step="1" value="3">
+          <span id="border-radius-val" style="width:40px;font-size:12px;">3px</span>
+        </div>
+        <div class="row">
+          <label for="border-style" style="width:130px;font-size:12px;">Border style:</label>
+          <select id="border-style">
+            <option value="solid">Solid</option>
+            <option value="dashed">Dashed</option>
+            <option value="dotted">Dotted</option>
+            <option value="none">None</option>
+          </select>
+        </div>
+        
+        <div class="row" style="margin-top:16px;">
+          <button type="button" class="btn-ghost" id="reset-theme-btn" data-i18n="opt.resetTheme">Reset theme</button>
+        </div>
+      </div>
+      
+      <div class="sub-section" style="margin-top: 20px;">
+        <div class="sub-title">👁️ Live preview</div>
+        <div class="section-hint">This is how your logs will look.</div>
+        <div class="theme-preview-container" id="theme-preview">
+          <div class="preview-line preview-error">
+            <span class="preview-timestamp">2026-07-12 14:23:45</span>
+            <span class="preview-level">ERROR</span>
+            <span class="preview-text">NullPointerException at PlayerService.java:123</span>
+          </div>
+          <div class="preview-line preview-warn">
+            <span class="preview-timestamp">2026-07-12 14:23:46</span>
+            <span class="preview-level">WARN</span>
+            <span class="preview-text">Connection timeout for player <b class="preview-trigger">Segamax</b></span>
+          </div>
+          <div class="preview-line preview-info">
+            <span class="preview-timestamp">2026-07-12 14:23:47</span>
+            <span class="preview-level">INFO</span>
+            <span class="preview-text">Player logged in: Segamax Account: idjylth020</span>
+          </div>
+          <div class="preview-line preview-message">
+            <span class="preview-timestamp">14:23:48</span>
+            <span class="preview-channel">[GENERAL]</span>
+            <span class="preview-player">&lt;Segamax&gt;</span>
+            <span class="preview-text">hello everyone!</span>
+          </div>
+          <div class="preview-line preview-hover">
+            <span class="preview-timestamp">2026-07-12 14:23:49</span>
+            <span class="preview-level">INFO</span>
+            <span class="preview-text">← hover effect example</span>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <section class="section" data-section="data" role="tabpanel">
+      <div class="section-title" data-i18n="section.data.title">Data / Backup</div>
+      <div class="section-hint" data-i18n="section.data.hint">Export/import all settings.</div>
+      
+      <div class="data-grid">
+        <div class="data-card">
+          <h3>📤 <span data-i18n="opt.export">Export</span></h3>
+          <div class="desc" data-i18n="opt.exportBtn">Download all data as JSON file.</div>
+          <div class="checkbox-row" style="margin-bottom:8px;">
+            <input type="checkbox" id="export-include-cache" checked>
+            <label for="export-include-cache" data-i18n="opt.includeCache">Include log cache</label>
+          </div>
+          <div class="checkbox-row" style="margin-bottom:12px;">
+            <input type="checkbox" id="export-include-sounds" checked>
+            <label for="export-include-sounds" data-i18n="opt.includeSounds">Include sounds</label>
+          </div>
+          <button type="button" class="btn-primary" id="export-btn" data-i18n="opt.exportBtn">Download backup</button>
+        </div>
+        
+        <div class="data-card">
+          <h3>📥 <span data-i18n="opt.import">Import</span></h3>
+          <div class="desc" data-i18n="opt.importBtn">Load settings from a backup file.</div>
+          <input type="file" id="import-file" accept=".json,application/json" style="font-size:11px;margin-bottom:12px;width:100%;" aria-label="Backup file">
+          <button type="button" class="btn-primary" id="import-btn" style="width:100%;" disabled data-i18n="opt.importBtn">Apply backup</button>
+        </div>
+      </div>
+      
+      <div class="warning-box">
+        <div class="title">⚠️ Warning</div>
+        <div class="text" data-i18n="opt.importConfirm">Importing will completely replace all current settings.</div>
+      </div>
+      
+      <div id="import-preview" role="log" aria-live="polite"></div>
+    </section>
+    
+    <section class="section" data-section="language" role="tabpanel">
+      <div class="section-title" data-i18n="section.language.title">Language</div>
+      <div class="section-hint" data-i18n="section.language.hint">Select interface language.</div>
+      <div class="lang-grid" id="lang-grid" role="listbox" aria-label="Available languages"></div>
+    </section>
+    
+    <section class="section" data-section="manual" role="tabpanel">
+      <div class="section-title" data-i18n="section.manual.title">Manual</div>
+      <div id="manual-content"></div>
+    </section>
+  </main>
+</div>
+
+<div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+<div class="modal-overlay" id="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal">
+    <h3 id="modal-title">Confirm action</h3>
+    <p id="modal-message">Are you sure?</p>
+    <div class="modal-actions">
+      <button type="button" class="btn-ghost" id="modal-cancel">Cancel</button>
+      <button type="button" class="btn-danger" id="modal-confirm">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script src="i18n.js"></script>
+<script src="options.js"></script>
+</body>
+</html>

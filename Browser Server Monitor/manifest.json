@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "Browser Server Monitor (by yayay)",
+  "version": "5.3",
+  "description": "Monitor game servers, view logs, AI analysis",
+  "permissions": [
+    "sidePanel",
+    "storage",
+    "notifications",
+    "activeTab",
+    "alarms"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "BSM",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "options_page": "options.html",
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src *; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:;"
+  }
+}
